@@ -42,7 +42,7 @@ frontend:
         'class' => \yii\authclient\Collection::class,
         'clients' => [
             'esia' => [
-                'class' => \tina\esia\components\EsiaOAuth2::class,
+                'class' => \tina\esia\EsiaOAuth2::class,
                 'clientId' => getenv('ESIA_CLIENT'),
                 'returnUrl' => ['/cabinet/login/oauth'],
                 'portalUrl' => getenv('ESIA_PORTAL'),
