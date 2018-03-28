@@ -1,0 +1,37 @@
+{
+    "name": "contrib/yii2-oauth2-esia",
+    "description": "Единая система авторизации по ESIA",
+    "type": "yii2-extension",
+    "keywords": [
+        "yii2",
+        "extension",
+        "esia"
+    ],
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "tina",
+            "email": "sayapina.tina@gmail.com"
+        }
+    ],
+    "repositories": [
+        {
+            "type": "composer",
+            "url": "https://asset-packagist.org"
+        }
+    ],
+    "require": {
+        "php": ">=7.1.0",
+        "yiisoft/yii2-authclient": "~2.0.0"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.0.x-dev"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "tina\\esia\\": ""
+        }
+    }
+}
