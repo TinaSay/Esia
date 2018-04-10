@@ -17,6 +17,7 @@ class EsiaOAuth2 extends OAuth2
     const STATUS_VERIFIED = 'VERIFIED';
     const TYPE_PHONE_MOBILE = 'MBT';
     const TYPE_EMAIL = 'EML';
+    const ESIA_SUFFIX = '@esia.ru';
 
     /**
      * @var string
@@ -176,8 +177,12 @@ class EsiaOAuth2 extends OAuth2
     {
         $token = $this->accessToken->token;
 
-        $chunks = explode('.', $token);
-        $payload = json_decode($this->base64UrlSafeDecode($chunks[1]));
+        $chunks = explode('.', (string)$token);
+        if (empty($token) || count($chunks) < 2) {
+            return [];
+        }
+        list(, $payload) = $chunks;
+        $payload = json_decode($this->base64UrlSafeDecode($payload));
 
         $oid = $payload->{'urn:esia:sbj_id'};
 
@@ -203,16 +208,10 @@ class EsiaOAuth2 extends OAuth2
         }
         $userInfo = $this->api($this->getPersonUrlByOid($oid), 'GET');
 
-        /**
-         * todo: use $normalizeUserAttributeMap
-         */
         $userInfo['oid'] = $oid;
         $userInfo['contacts'] = $userContacts;
-        $userInfo['login'] = $email['address'];
+        $userInfo['login'] = ($email['address'] ? $email['address'] : $oid . self::ESIA_SUFFIX);
         $userInfo['phone'] = $phone['number'];
-        $userInfo['name'] = $userInfo['lastName']
-            . ' ' . $userInfo['firstName']
-            . ' ' . $userInfo['middleName'];
 
         return $userInfo;
     }
