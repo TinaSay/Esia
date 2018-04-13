@@ -402,4 +402,12 @@ class EsiaOAuth2 extends OAuth2
             'id' => 'oid',
         ];
     }
+
+    /**
+     * @return string
+     */
+    public function getTitle()
+    {
+        return 'ЕСИА';
+    }
 }
