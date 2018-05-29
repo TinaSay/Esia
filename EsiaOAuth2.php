@@ -193,17 +193,19 @@ class EsiaOAuth2 extends OAuth2
         if (($contacts['size'] ?? 0) > 0) {
             foreach ($contacts['elements'] as $element) {
                 $contact = $this->api($element, 'GET');
-                if ($contact['type'] == self::TYPE_EMAIL
-                    && $email['status'] != self::STATUS_VERIFIED) {
-                    $email['address'] = $contact['value'];
-                    $email['status'] = $contact['vrfStu'];
+                if ($contact && isset($contact['type'])) {
+                    if ($contact['type'] == self::TYPE_EMAIL
+                        && $email['status'] != self::STATUS_VERIFIED) {
+                        $email['address'] = $contact['value'];
+                        $email['status'] = $contact['vrfStu'];
+                    }
+                    if ($contact['type'] == self::TYPE_PHONE_MOBILE
+                        && $phone['status'] != self::STATUS_VERIFIED) {
+                        $phone['number'] = $contact['value'];
+                        $phone['status'] = $contact['vrfStu'];
+                    }
+                    $userContacts[] = $contact;
                 }
-                if ($contact['type'] == self::TYPE_PHONE_MOBILE
-                    && $phone['status'] != self::STATUS_VERIFIED) {
-                    $phone['number'] = $contact['value'];
-                    $phone['status'] = $contact['vrfStu'];
-                }
-                $userContacts[] = $contact;
             }
         }
         $userInfo = $this->api($this->getPersonUrlByOid($oid), 'GET');
