@@ -3,8 +3,10 @@
 namespace tina\esia;
 
 use tina\esia\exceptions\SignFailException;
+use Yii;
 use yii\authclient\OAuth2;
 use yii\helpers\Url;
+use yii\httpclient\Request;
 use yii\log\Logger;
 
 /**
@@ -17,7 +19,8 @@ class EsiaOAuth2 extends OAuth2
     const STATUS_VERIFIED = 'VERIFIED';
     const TYPE_PHONE_MOBILE = 'MBT';
     const TYPE_EMAIL = 'EML';
-    const ESIA_SUFFIX = '@esia.ru';
+    const ESIA_SUFFIX = '@esia.gosuslugi.ru';
+    const CLIENT_NAME = 'esia';
 
     /**
      * @var string
@@ -162,7 +165,13 @@ class EsiaOAuth2 extends OAuth2
             'token_type' => 'Bearer',
             'refresh_token' => $this->state,
         ];
-        $response = $this->sendRequest('POST', $this->getTokenUrl(), array_merge($defaultParams, $params));
+        /** @var Request $request */
+        $request = Yii::createObject(Request::class);
+        $request->setUrl($this->getTokenUrl())
+            ->setMethod('POST')
+            ->setData(array_merge($defaultParams, $params));
+
+        $response = $this->sendRequest($request);
         $token = $this->createToken(['params' => $response]);
         $this->setAccessToken($token);
 
@@ -175,7 +184,7 @@ class EsiaOAuth2 extends OAuth2
      */
     protected function initUserAttributes()
     {
-        $token = $this->accessToken->token;
+        $token = $this->getAccessToken()->getToken();
 
         $chunks = explode('.', (string)$token);
         if (empty($token) || count($chunks) < 2) {
@@ -189,10 +198,10 @@ class EsiaOAuth2 extends OAuth2
         $userContacts = [];
         $email = ['address' => '', 'status' => ''];
         $phone = ['number' => '', 'status' => ''];
-        $contacts = $this->api($this->getContactUrlByOid($oid), 'GET');
+        $contacts = $this->api($this->getContactUrlByOid($oid));
         if (($contacts['size'] ?? 0) > 0) {
             foreach ($contacts['elements'] as $element) {
-                $contact = $this->api($element, 'GET');
+                $contact = $this->api($element);
                 if ($contact && isset($contact['type'])) {
                     if ($contact['type'] == self::TYPE_EMAIL
                         && $email['status'] != self::STATUS_VERIFIED) {
@@ -208,7 +217,7 @@ class EsiaOAuth2 extends OAuth2
                 }
             }
         }
-        $userInfo = $this->api($this->getPersonUrlByOid($oid), 'GET');
+        $userInfo = $this->api($this->getPersonUrlByOid($oid));
 
         $userInfo['oid'] = $oid;
         $userInfo['contacts'] = $userContacts;
@@ -219,15 +228,33 @@ class EsiaOAuth2 extends OAuth2
     }
 
     /**
-     * @inheritdoc
+     * @param string $apiSubUrl
+     * @param string $method
+     * @param array|string $data
+     * @param array $headers
+     * @return array
      */
-    protected function apiInternal($accessToken, $url, $method, array $params, array $headers)
+    public function api($apiSubUrl, $method = 'GET', $data = [], $headers = [])
     {
-        $headers = array_merge($headers, [
-            'Authorization: Bearer ' . $accessToken->token,
-        ]);
 
-        return $this->sendRequest($method, $url, $params, $headers);
+        $headers = array_merge([
+            'Authorization' => 'Bearer ' . $this->getAccessToken()->getToken(),
+        ], $headers);
+
+        $request = $this->createApiRequest()
+            ->setMethod($method)
+            ->setUrl($apiSubUrl)
+            ->addHeaders($headers);
+
+        if (!empty($data)) {
+            if (is_array($data)) {
+                $request->setData($data);
+            } else {
+                $request->setContent($data);
+            }
+        }
+
+        return $this->sendRequest($request);
     }
 
     /**
@@ -249,7 +276,7 @@ class EsiaOAuth2 extends OAuth2
      *
      * @return string
      */
-    private function getPersonUrlByOid($oid)
+    protected function getPersonUrlByOid($oid)
     {
         return $this->portalUrl . $this->personUrl . '/' . $oid;
     }
@@ -259,7 +286,7 @@ class EsiaOAuth2 extends OAuth2
      *
      * @return string
      */
-    private function getContactUrlByOid($oid)
+    protected function getContactUrlByOid($oid)
     {
         return $this->portalUrl . $this->personUrl . '/' . $oid . '/ctts';
     }
@@ -269,7 +296,7 @@ class EsiaOAuth2 extends OAuth2
      *
      * @return string
      */
-    private function getTokenUrl()
+    protected function getTokenUrl()
     {
         return $this->portalUrl . $this->tokenUrl;
     }
@@ -279,7 +306,7 @@ class EsiaOAuth2 extends OAuth2
      *
      * @return string
      */
-    private function getCodeUrl()
+    protected function getCodeUrl()
     {
         return $this->portalUrl . $this->codeUrl;
     }
@@ -290,7 +317,7 @@ class EsiaOAuth2 extends OAuth2
      * @return mixed
      * @throws SignFailException
      */
-    public function signPKCS7($message)
+    protected function signPKCS7($message)
     {
         $certContent = file_get_contents($this->certPath);
         $keyContent = file_get_contents($this->privateKeyPath);
@@ -331,7 +358,7 @@ class EsiaOAuth2 extends OAuth2
     /**
      * @throws SignFailException
      */
-    private function checkFilesExists()
+    protected function checkFilesExists()
     {
         if (!file_exists($this->certPath)) {
             throw new SignFailException(
@@ -360,7 +387,7 @@ class EsiaOAuth2 extends OAuth2
      *
      * @return string
      */
-    private function urlSafe($string)
+    protected function urlSafe($string)
     {
         return rtrim(strtr(trim($string), '+/', '-_'), '=');
     }
@@ -368,7 +395,7 @@ class EsiaOAuth2 extends OAuth2
     /**
      * @return string
      */
-    private function getTimeStamp()
+    protected function getTimeStamp()
     {
         return date("Y.m.d H:i:s O");
     }
@@ -376,7 +403,7 @@ class EsiaOAuth2 extends OAuth2
     /**
      * @return string
      */
-    private function getOpenIdState()
+    protected function getOpenIdState()
     {
         return sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
             mt_rand(0, 0xffff), mt_rand(0, 0xffff),
@@ -390,7 +417,7 @@ class EsiaOAuth2 extends OAuth2
     /**
      * @return string
      */
-    private function getRandomString()
+    protected function getRandomString()
     {
         return md5(uniqid(mt_rand(), true));
     }
@@ -411,5 +438,13 @@ class EsiaOAuth2 extends OAuth2
     public function getTitle()
     {
         return 'ЕСИА';
+    }
+
+    /**
+     * @return string
+     */
+    public function getName()
+    {
+        return static::CLIENT_NAME;
     }
 }

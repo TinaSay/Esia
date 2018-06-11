@@ -12,6 +12,10 @@
         {
             "name": "tina",
             "email": "sayapina.tina@gmail.com"
+        },
+        {
+            "name": "elfuvo",
+            "email": "elfuvo@gmail.com"
         }
     ],
     "repositories": [
@@ -22,7 +26,7 @@
     ],
     "require": {
         "php": ">=7.1.0",
-        "yiisoft/yii2-authclient": "~2.0.0 | ~2.1.0"
+        "yiisoft/yii2-authclient": "~2.1.0"
     },
     "extra": {
         "branch-alias": {
