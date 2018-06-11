@@ -3,7 +3,6 @@
 namespace tina\esia;
 
 use tina\esia\exceptions\SignFailException;
-use Yii;
 use yii\authclient\OAuth2;
 use yii\helpers\Url;
 use yii\httpclient\Request;
@@ -166,8 +165,8 @@ class EsiaOAuth2 extends OAuth2
             'refresh_token' => $this->state,
         ];
         /** @var Request $request */
-        $request = Yii::createObject(Request::class);
-        $request->setUrl($this->getTokenUrl())
+        $request = $this->createRequest()
+            ->setUrl($this->getTokenUrl())
             ->setMethod('POST')
             ->setData(array_merge($defaultParams, $params));
 
