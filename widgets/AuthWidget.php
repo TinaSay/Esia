@@ -6,7 +6,7 @@
  * Time: 19:31
  */
 
-namespace app\modules\esia\widgets;
+namespace tina\esia\widgets;
 
 use tina\esia\EsiaOAuth2;
 use Yii;
