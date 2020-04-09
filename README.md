@@ -61,4 +61,6 @@ frontend:
 
 ```
 
+For supporting GOST engine added new client EsiaGostOAuth2.
+
 @TODO: unit tests
