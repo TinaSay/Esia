@@ -62,5 +62,6 @@ frontend:
 ```
 
 For supporting GOST engine added new client EsiaGostOAuth2.
+Before using it install openssl with GOST engine.
 
 @TODO: unit tests
